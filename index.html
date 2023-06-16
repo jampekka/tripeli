@@ -2,7 +2,21 @@
 <head>
 
 <style>
+@font-face {
+	font-family: 'spaceish';
+	src: url('./moonhouse.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'blockish';
+	src: url('./Anton-Regular.ttf') format('truetype');
+}
+
 body {
+	color: white;
+	font-size: 200%;
+	font-family: 'blockish';
+	font-style: italic;
 	margin: 0;
 	background-color: black;
 	touch-action: none;
@@ -72,10 +86,34 @@ body > canvas {
 	
 	aspect-ratio: 1/1;
 }
+
+#intro {
+	background-color: black;
+	z-index: 100;
+	position: fixed;
+	height: 100%;
+	width: 100%;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
 </style>
 
 </head>
 <body>
+	<div id="intro">
+		<h1 style="font-family: spaceish"><i>TRIPELI</i></h1>
+		<div>
+			Shoot at the incoming targets by swiping to their direction.<br><br>
+			One shot per target.<br><br>
+			The faster you shoot, the harder it's to hit.<br>
+			The later you hit the more chance that a shrapnel hits you.<br>
+			<br>
+			<b>Click anywhere to play!</b>
+		</div>
+	</div>
 	<div id="gamearea"></div>
 	<div id="controlarea">
 		<div id="controller"></div>
@@ -288,7 +326,7 @@ class TargetObject
 		{
 		@distance=0.8
 		@angle=Math.random()*2*Math.PI
-		@speed=0.3
+		@speed=0.2
 		@size=0.07
 		@death_dur=0.2
 		@dead=false
@@ -315,13 +353,17 @@ class TargetObject
 		@t = 0
 		scene.add @object
 
+	set_speed: (@speed) ->
+		@vx = Math.sin(@direction)*@speed
+		@vy = Math.cos(@direction)*@speed
+
 	tick: (dt) =>
 		@t += dt
 		@object.position.x += @vx*dt
 		@object.position.y += @vy*dt
 		
 		@distance = (@object.position.x**2 + @object.position.y**2)**0.5
-		@direction = Math.atan2(@object.position.x, @object.position.y)
+		@angle = Math.atan2(@object.position.x, @object.position.y)
 
 		if @dead and not @done
 			t = @t - @death_t
@@ -381,14 +423,14 @@ demo_trial = ->
 	#document.body.addEventListener 'click', (ev) -> console.log "Got click"
 	
 	render()
-	"""
 	await new Promise (resolve, reject) ->
 		console.log "Adding click listener"
-		document.body.addEventListener 'click', ->
-			await document.body.requestFullscreen()
+		intro = document.getElementById "intro"
+		intro.addEventListener 'click', ->
+			#await document.body.requestFullscreen()
 			#await document.body.requestPointerLock()
+			intro.style.display = 'none'
 			resolve()
-	"""
 
 	base_geometry = new THREE.SphereGeometry base_radius, 30, 30
 	base_material = new THREE.MeshBasicMaterial color: 0xaaaaaa, transparent: true
@@ -455,6 +497,7 @@ demo_trial = ->
 					]
 				geometry = new THREE.BufferGeometry().setFromPoints raypoints
 				
+				# TODO: This is buggy. Do manually
 				ray = new THREE.Raycaster(
 					new THREE.Vector3(0, 0, 0),
 					new THREE.Vector3(dirx, diry, 0)
@@ -462,11 +505,11 @@ demo_trial = ->
 
 				has_hit = false
 				for target in targets
+					continue if target.shrapnel
 					hits = ray.intersectObjects [target.object]
 					continue if not hits.length
 					has_hit = true
 					target.hit()
-					continue if target.shrapnel
 					
 					n_shrapnels = 6
 					angle_base = Math.random()*Math.PI*2
@@ -486,6 +529,17 @@ demo_trial = ->
 					color = 0x00ff00
 				else
 					color = 0xff0000
+					closest = null
+					for target in targets
+						continue if target.shrapnel
+						if not closest
+							closest = target
+							continue
+						if target.distance < closest.distance
+							closest = target
+					if closest
+						after 0.2, ->
+							closest.set_speed 2.0
 				#line = new THREE.Line geometry, material
 				line = new RayObject(dirx, diry, color)
 				tickers.push line
@@ -518,6 +572,7 @@ demo_trial = ->
 			collision = base_sphere.intersectsSphere target_sphere
 			if collision
 				target.hit()
+				target.set_speed 0
 				base_health = 0.0
 				if not target.shrapnel
 					after 0.5, new_target
