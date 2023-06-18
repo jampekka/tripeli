@@ -112,13 +112,56 @@ body > canvas {
 	justify-content: center;
 	align-items: center;
 }
+
+#outro {
+	background-color: black;
+	z-index: 200;
+	position: fixed;
+	height: 100%;
+	width: 100%;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+}
+
+#score {
+	position: absolute;
+	top: 0;
+}
+
+.score_element {
+	display: inline-block;
+	background-color: gray;
+	width: 0.5em;
+	height: 0.5em;
+	margin: 2px;
+	border-radius: 50%;
+}
+
+.score_win {
+	border: 1px solid white;
+	background-color: white;	
+}
+
+.score_loss {
+	border: 1px solid white;
+	background-color: black;	
+}
+
+h1 {
+	font-family: spaceish;
+	font-style: italic;
+}
 </style>
 
 </head>
 <body>
 	<div id="gamearea">
 		<div id="intro">
-		<h1 style="font-family: spaceish"><i>TRIPELI</i></h1>
+		<h1 style="font-family: spaceish"><i>Tripeli</i></h1>
 		<div>
 			Shoot at the incoming targets by swiping to their direction.<br><br>
 			Hold down the joystick to launch a new target.<br><br>
@@ -130,9 +173,25 @@ body > canvas {
 	</div>
 	</div>
 	<div id="controlarea">
+		<div id="score">
+			<span class="score_element" style="display: none"></span>
+		</div>
 		<div class="hint">Hold down for a new target</div>
 		<div id="controller"></div>
 		<div class="hint">Swipe to shoot</div>
+	</div>
+	<div id="outro" style="display: none" onclick="location.reload();">
+		<h1>Tripeli</h1>
+		<div id="score_text">
+			Score
+			<span id="score_text_hits"></span>
+			/
+			<span id="score_text_trials"></span>
+		</div>
+		<div id="final_score_balls" style="position: relative; margin: 1em"></div>
+		<div>
+			Click to play again
+		</div>
 	</div>
 </body>
 
@@ -438,6 +497,17 @@ class RayObject
 demo_trial = ->
 	base_radius = 0.05
 	game_area_radius = 0.9
+	n_trials = 20
+	score_elements = []
+	score_el = document.getElementById("score")
+	template_el = score_el.querySelector(".score_element")
+	for i in [0...n_trials]
+		sel = template_el.cloneNode()
+		sel.style.display = "inline-block"
+		score_el.appendChild sel
+		score_elements.push sel
+	score = 0
+	trial = -1
 	
 	#document.body.addEventListener 'click', (ev) -> console.log "Got click"
 	
@@ -479,9 +549,12 @@ demo_trial = ->
 		return target
 	
 	main_target = null
+	game_over = false
 	new_target = (opts={}) ->
 		return if main_target
-		
+		return if game_over
+
+		trial += 1
 		intro = document.getElementById "intro"
 		intro.style.display = 'none'
 
@@ -491,6 +564,16 @@ demo_trial = ->
 	clear_target = () ->
 		idle_timer = 0.0
 		main_target = null
+		if trial >= n_trials - 1
+			game_over = true
+		
+			after 1.0, ->
+				document.getElementById("score_text_hits").innerHTML = score
+				document.getElementById("score_text_trials").innerHTML = n_trials
+				el = score_el.cloneNode(true)
+				el.style.position = "static"
+				document.getElementById("final_score_balls").appendChild el
+				document.getElementById("outro").style.display = "flex"
 	
 	document.getElementById("controller").addEventListener "pointerdown", (ev) ->
 		after 0.3, new_target
@@ -559,6 +642,8 @@ demo_trial = ->
 							speed: 1.0
 							size: 0.01
 						shrapnel.shrapnel = true
+					score_elements[trial].classList.add("score_win")
+					score += 1
 					clear_target()
 					#after 0.5, new_target
 
@@ -608,11 +693,18 @@ demo_trial = ->
 			target_sphere = new THREE.Sphere target.object.position, target.object.geometry.boundingSphere.radius
 			collision = base_sphere.intersectsSphere target_sphere
 			if collision
+				console.log score_elements[trial]
+				score_elements[trial].classList.remove("score_win")
+				score_elements[trial].classList.add("score_loss")
 				target.hit()
 				target.set_speed 0
 				base_health = 0.0
 				if not target.shrapnel
 					clear_target()
+				else
+					console.log "Reducing score!"
+					score -= 1
+					console.log score
 		
 		targets = targets.filter (target) -> not target.dead
 		
