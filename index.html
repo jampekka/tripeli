@@ -103,7 +103,7 @@ body > canvas {
 #intro {
 	background-color: black;
 	z-index: 100;
-	position: fixed;
+	position: absolute;
 	height: 100%;
 	width: 100%;
 
@@ -116,7 +116,8 @@ body > canvas {
 
 </head>
 <body>
-	<div id="intro">
+	<div id="gamearea">
+		<div id="intro">
 		<h1 style="font-family: spaceish"><i>TRIPELI</i></h1>
 		<div>
 			Shoot at the incoming targets by swiping to their direction.<br><br>
@@ -124,10 +125,10 @@ body > canvas {
 			The faster you shoot, the harder it's to hit.<br>
 			The later you hit the more chance that a shrapnel hits you.<br>
 			<br>
-			<b>Click anywhere to play!</b>
+			<b>Hold joystick to start!</b>
 		</div>
 	</div>
-	<div id="gamearea"></div>
+	</div>
 	<div id="controlarea">
 		<div class="hint">Hold down for a new target</div>
 		<div id="controller"></div>
@@ -441,6 +442,7 @@ demo_trial = ->
 	#document.body.addEventListener 'click', (ev) -> console.log "Got click"
 	
 	render()
+	"""
 	await new Promise (resolve, reject) ->
 		console.log "Adding click listener"
 		intro = document.getElementById "intro"
@@ -449,6 +451,7 @@ demo_trial = ->
 			#await document.body.requestPointerLock()
 			intro.style.display = 'none'
 			resolve()
+	"""
 
 	base_geometry = new THREE.SphereGeometry base_radius, 30, 30
 	base_material = new THREE.MeshBasicMaterial color: 0xaaaaaa, transparent: true
@@ -478,9 +481,15 @@ demo_trial = ->
 	main_target = null
 	new_target = (opts={}) ->
 		return if main_target
+		
+		intro = document.getElementById "intro"
+		intro.style.display = 'none'
+
 		main_target = add_target(opts)
 		base_energy = 1.0
+	idle_timer = 0.0
 	clear_target = () ->
+		idle_timer = 0.0
 		main_target = null
 	
 	document.getElementById("controller").addEventListener "pointerdown", (ev) ->
@@ -494,6 +503,11 @@ demo_trial = ->
 		dt = time - full_t
 		full_t = time
 		t = full_t - t0
+
+		if not main_target
+			idle_timer += dt
+			if idle_timer > 5.0
+				document.getElementById("intro").style.display = "flex"
 		
 		tasks = tasks.filter ([task_t, task]) ->
 			if t > task_t
