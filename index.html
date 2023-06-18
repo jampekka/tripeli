@@ -20,6 +20,8 @@ body {
 	margin: 0;
 	background-color: black;
 	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 body > canvas {
@@ -81,8 +83,7 @@ body > canvas {
 
 #controlarea {
 	flex-direction: column;
-	user-select: none;
-	-webkit-user-select: none;
+
 }
 
 #controlarea > div {
@@ -577,7 +578,7 @@ demo_trial = ->
 				document.getElementById("final_score_balls").appendChild el
 				document.getElementById("outro").style.display = "flex"
 	
-	document.getElementById("controller").addEventListener "pointerdown", (ev) ->
+	document.body.addEventListener "pointerdown", (ev) ->
 		after 0.3, new_target
 
 	while true
