@@ -79,6 +79,19 @@ body > canvas {
 }
 }
 
+#controlarea {
+	flex-direction: column;
+}
+
+#controlarea > div {
+	margin: 1em;
+}
+
+#controlarea > .hint {
+	pointer-events: none;
+	user-select: none;
+}
+
 #controller {
 	background-color: #dddddd;
 	border: 5px solid white;
@@ -107,7 +120,7 @@ body > canvas {
 		<h1 style="font-family: spaceish"><i>TRIPELI</i></h1>
 		<div>
 			Shoot at the incoming targets by swiping to their direction.<br><br>
-			One shot per target.<br><br>
+			Hold down the joystick to launch a new target.<br><br>
 			The faster you shoot, the harder it's to hit.<br>
 			The later you hit the more chance that a shrapnel hits you.<br>
 			<br>
@@ -116,7 +129,9 @@ body > canvas {
 	</div>
 	<div id="gamearea"></div>
 	<div id="controlarea">
+		<div class="hint">Hold down for a new target</div>
 		<div id="controller"></div>
+		<div class="hint">Swipe to shoot</div>
 	</div>
 </body>
 
@@ -184,7 +199,7 @@ do_drag = (ev) ->
 	
 	ctrl.style.transform = "translate(#{dx}px, #{dy}px)"
 	dd = Math.sqrt(dx**2 + dy**2)
-	if dd > ctrl.offsetWidth
+	if dd > ctrl.offsetWidth/2
 		end_drag(ev)
 
 end_drag = (ev) ->
@@ -457,12 +472,17 @@ demo_trial = ->
 
 		return target
 	
+	main_target = null
 	new_target = (opts={}) ->
-		add_target(opts)
+		return if main_target
+		main_target = add_target(opts)
 		base_energy = 1.0
+	clear_target = () ->
+		main_target = null
 	
-	new_target()
-		
+	document.getElementById("controller").addEventListener "pointerdown", (ev) ->
+		after 0.3, new_target
+
 	while true
 		[time, events] = await next_frame()
 		if not full_t?
@@ -522,8 +542,8 @@ demo_trial = ->
 							speed: 1.0
 							size: 0.01
 						shrapnel.shrapnel = true
-
-					after 0.5, new_target
+					clear_target()
+					#after 0.5, new_target
 
 				if has_hit
 					color = 0x00ff00
@@ -575,7 +595,7 @@ demo_trial = ->
 				target.set_speed 0
 				base_health = 0.0
 				if not target.shrapnel
-					after 0.5, new_target
+					clear_target()
 		
 		targets = targets.filter (target) -> not target.dead
 		
