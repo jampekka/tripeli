@@ -380,6 +380,9 @@ class TargetObject
 		@distance = (@object.position.x**2 + @object.position.y**2)**0.5
 		@angle = Math.atan2(@object.position.x, @object.position.y)
 
+		if @distance > 1.0 and not @dead
+			@hit()
+
 		if @dead and not @done
 			t = @t - @death_t
 			if t > @death_dur
