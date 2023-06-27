@@ -1,7 +1,9 @@
+<!DOCTYPE html>
 <html>
 <head>
 
 <style>
+
 @font-face {
 	font-family: 'spaceish';
 	src: url('./moonhouse.ttf') format('truetype');
@@ -12,108 +14,68 @@
 	src: url('./Anton-Regular.ttf') format('truetype');
 }
 
+
 body {
+	background-color: black;
 	color: white;
 	font-size: 200%;
 	font-family: 'blockish';
 	font-style: italic;
-	margin: 0;
-	background-color: black;
-	touch-action: none;
-	user-select: none;
-	-webkit-user-select: none;
 }
 
-body > canvas {
-	cursor: none;
-	display: block;
-    margin: 0 auto;
+h1 {
+	font-family: spaceish;
+	font-style: italic;
 }
 
-@media (orientation: landscape) {
-#gamearea {
+#maincontainer {
+}
+
+#maincontainer {
 	position: fixed;
-	left: 0;
-	width: 68.4%;
-	top: 0;
+	width: 100%;
 	height: 100%;
-}
 
-#controlarea {
-	position: fixed;
-	right: 0;
-	width: 31.6%;
-	height: 100%;
-	
 	display: flex;
+	flex-direction: column;
+
 	justify-content: center;
 	align-items: center;
 }
 
-#controller {
-	width: 20%;
-}
-}
-
-@media (orientation: portrait) {
-#gamearea {
-	position: fixed;
-	left: 0;
-	height: 68.4%;
-	top: 0;
-	width: 100%;
-}
-
-#controlarea {
-	position: fixed;
-	right: 0;
-	height: 31.6%;
-	width: 100%;
+#gamecontainer {
+	display: fixed;
 	bottom: 0;
-	
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-
-#controller {
-	height: 20%;
-}
-}
-
-#controlarea {
-	flex-direction: column;
-
-}
-
-#controlarea > div {
-	margin: 1em;
-}
-
-#controlarea > .hint {
-	pointer-events: none;
-	user-select: none;
-}
-
-#controller {
-	background-color: #dddddd;
-	border: 5px solid white;
-	border-radius: 50%;
-	
-	aspect-ratio: 1/1;
-}
-
-#intro {
-	background-color: black;
-	z-index: 100;
-	position: absolute;
-	height: 100%;
+	height: 90%;
 	width: 100%;
+	display: flex;
+	align-items: end;
+	justify-content: center;
+}
+
+#infocontainer {
+	position: fixed;
+	top: 10px;
+	height: 10%;
+	left: 10px;
+	right: 10px;
+	
+	z-index: 100;
 
 	display: flex;
-	flex-direction: column;
-	justify-content: center;
+	flex-direction: row;
 	align-items: center;
+	justify-content: space-between;
+}
+
+#infocontainer > h1 {
+	display: block;
+	
+}
+
+#gamearea {
+	width: 100%;
+	aspect-ratio: 2/1;
 }
 
 #outro {
@@ -131,8 +93,6 @@ body > canvas {
 }
 
 #score {
-	position: absolute;
-	top: 0;
 }
 
 .score_element {
@@ -154,16 +114,26 @@ body > canvas {
 	background-color: black;	
 }
 
-h1 {
-	font-family: spaceish;
-	font-style: italic;
-}
+
+/*#gamearea > canvas {
+	width: 100%;
+	height: 100%;
+}*/
+
 </style>
 
 </head>
 <body>
-	<div id="gamearea">
-		<div id="intro">
+	<!--<div id="controlarea">
+		<div id="score">
+			<span class="score_element" style="display: none"></span>
+		</div>
+		<div class="hint">Hold down for a new target</div>
+		<div id="controller"></div>
+		<div class="hint">Swipe to shoot</div>
+	</div>-->
+	<!--<div style="display: none">
+	<div id="intro" style="display: none">
 		<h1 style="font-family: spaceish"><i>Tripeli</i></h1>
 		<div>
 			Shoot at the incoming targets by swiping to their direction.<br><br>
@@ -175,13 +145,13 @@ h1 {
 		</div>
 	</div>
 	</div>
-	<div id="controlarea">
-		<div id="score">
+
+	<div id="score">
 			<span class="score_element" style="display: none"></span>
-		</div>
-		<div class="hint">Hold down for a new target</div>
-		<div id="controller"></div>
-		<div class="hint">Swipe to shoot</div>
+	</div>
+	<div id="gamearea">
+		
+	</div>
 	</div>
 	<div id="outro" style="display: none" onclick="location.reload();">
 		<h1>Tripeli</h1>
@@ -196,6 +166,37 @@ h1 {
 			Click to play again
 		</div>
 	</div>
+	-->
+	
+	<div id="maincontainer">
+		<div id="intro" style="display: none"></div>
+		<div id="infocontainer">
+			<h1>Tripeli</h1>
+			<div id="score">
+				<span class="score_element" style="display: none"></span>
+			</div>
+		</div>	
+		<div id="gamecontainer">
+			<div id="gamearea">
+		
+			</div>
+		</div>
+
+		<div id="outro" style="display: none" onclick="location.reload();">
+		<h1>Tripeli</h1>
+		<div id="score_text">
+			Score
+			<span id="score_text_hits"></span>
+			/
+			<span id="score_text_trials"></span>
+		</div>
+		<div id="final_score_balls" style="position: relative; margin: 1em"></div>
+		<div>
+			Click to play again
+		</div>
+	</div>
+	</div>
+
 </body>
 
 <script type="text/javascript" src="coffeescript.js"></script>
@@ -204,28 +205,45 @@ h1 {
 
 <script type="text/coffeescript">
 scene = new THREE.Scene()
-camera = new THREE.OrthographicCamera -1, 1, -1, 1, 0.1, 1000
+base_radius = 0.1
+
+margin = base_radius*2
+area_height = 1 + 2*margin
+area_width =  area_height
+
+console.log area_height
+top = area_height - margin/2
+bottom = -margin/2
+console.log top, bottom
+
+camera = new THREE.OrthographicCamera -area_width/2, area_width/2, (area_height-margin), -margin, 0.1, 1000
 camera.position.z = 5
+#camera.position.y = 1 - base_radius
 
 renderer = new THREE.WebGLRenderer antialias: true
+
+gamearea = document.getElementById("gamearea")
 document.getElementById("gamearea").appendChild renderer.domElement
 
 render = ->
-	el = document.body
-	w = el.clientWidth
-	h = el.clientHeight
+	el = gamearea
+	w = el.offsetWidth
+	h = el.offsetHeight
+	#h = w/2
 	m = Math.min w,h
-#	renderer.setSize w, h
+	
+	#renderer.setSize w, h
 	renderer.setSize m, m
 
-#	h = h/w
-	h = 1
-	w = 1
-	camera.left = -w
-	camera.right = w
-	camera.bottom = -h
-	camera.top = h
-	camera.updateProjectionMatrix() # May be expensive
+	h = h/w
+	#h = 1
+	#w = 1
+	
+	#camera.left = -w
+	#camera.right = w
+	#camera.bottom = -h
+	#camera.top = h
+	#camera.updateProjectionMatrix() # May be expensive
 	renderer.render scene, camera
 
 events_seen = []
@@ -252,7 +270,7 @@ _position_delta = null
 
 start_drag = (ev) ->
 	return if _drag_start
-	ctrl.style.transition = ""
+	#ctrl.style.transition = ""
 	_drag_start = ev
 do_drag = (ev) ->
 	return if not _drag_start
@@ -260,15 +278,16 @@ do_drag = (ev) ->
 	dx = ev.screenX - _drag_start.screenX
 	dy = ev.screenY - _drag_start.screenY
 	
-	ctrl.style.transform = "translate(#{dx}px, #{dy}px)"
+	#ctrl.style.transform = "translate(#{dx}px, #{dy}px)"
+	# TODO: To scale!
 	dd = Math.sqrt(dx**2 + dy**2)
-	if dd > ctrl.offsetWidth/2
+	if dd > 100
 		end_drag(ev)
 
 end_drag = (ev) ->
 	return if not _drag_start
-	ctrl.style.transform = "translate(0px, 0px)"
-	ctrl.style.transition = "0.1s"
+	#ctrl.style.transform = "translate(0px, 0px)"
+	#ctrl.style.transition = "0.1s"
 	
 	dx = ev.screenX - _drag_start.screenX
 	dy = ev.screenY - _drag_start.screenY
@@ -282,7 +301,7 @@ end_drag = (ev) ->
 
 document.body.addEventListener "pointermove", do_drag
 #document.body.addEventListener "pointerup", end_drag
-document.body.addEventListener "pointerup", end_drag
+#document.body.addEventListener "pointerup", end_drag
 document.body.addEventListener "pointerdown", start_drag
 
 
@@ -402,8 +421,8 @@ new_target = (opts={}) ->
 class TargetObject
 	constructor: (opts={}) ->
 		{
-		@distance=0.8
-		@angle=Math.random()*2*Math.PI
+		@distance=1.0
+		@angle=(Math.random() - 0.5)/2*Math.PI
 		@speed=0.2
 		@size=0.07
 		@death_dur=0.2
@@ -443,7 +462,7 @@ class TargetObject
 		@distance = (@object.position.x**2 + @object.position.y**2)**0.5
 		@angle = Math.atan2(@object.position.x, @object.position.y)
 
-		if @distance > 1.0 and not @dead
+		if @distance > 2.0 and not @dead
 			@hit()
 
 		if @dead and not @done
@@ -466,7 +485,7 @@ class TargetObject
 
 class RayObject
 	constructor: (@dx, @dy, @color, opts={}) ->
-		{@duration=0.5, @length=0.9} = opts
+		{@duration=0.5, @length=2.0} = opts
 		raypoints = [
 			new THREE.Vector3(0, 0, 0),
 			new THREE.Vector3(@dx*@length, @dy*@length, 0)
@@ -498,7 +517,6 @@ class RayObject
 		@object.material.opacity = 1 - @t/@duration
 
 demo_trial = ->
-	base_radius = 0.05
 	game_area_radius = 0.9
 	n_trials = 20
 	score_elements = []
@@ -513,6 +531,8 @@ demo_trial = ->
 	trial = -1
 	
 	#document.body.addEventListener 'click', (ev) -> console.log "Got click"
+
+
 	
 	render()
 	"""
@@ -580,6 +600,11 @@ demo_trial = ->
 	
 	document.body.addEventListener "pointerdown", (ev) ->
 		after 0.3, new_target
+	
+
+	#wtf = add_target(speed: 0)
+	#wtf.object.position.y = 1
+	#wtf.object.position.x = 0
 
 	while true
 		[time, events] = await next_frame()
