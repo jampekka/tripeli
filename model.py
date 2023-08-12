@@ -4,30 +4,70 @@ Mathematical models for different aspects of the Tripeli task.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from dataclasses import dataclass
 #import sympy as sp
 
 from scipy.stats import vonmises, norm
 
-N_SHRAPNELS=5
-BASE_RADIUS = 0.1
-TARGET_RADIUS = 0.1
-
 # TODO: Verify all by simulation!
 
-default_trial=dict(
-    target_radius=0.1,
-    n_shrapnels=5,
-    base_radius=0.1,
+@dataclass
+class StaticTrial:
+    target_radius=0.1
+    n_shrapnels: ... = 5
+    shrapnel_radius=0.0
+    base_radius=0.1
 
-    distance=0.5,
+    distance: ... =0.5
 
-    shot_std=np.radians(5),
-    shot_bias=np.radians(0),
+    shot_std: ... = np.radians(5),
+    shot_bias=np.radians(0)
     
-    hit_reward=1,
-    miss_reward=-1,
-    shrapnel_reward=-1,
-)
+    hit_reward=1
+    miss_reward=-1
+    shrapnel_reward=-1
+
+    def shrapnel_hit_probability(self):
+        # TODO: Account for shrapnel size
+        # TODO: Verify by simulation! I don't fully understand this myself!
+
+        angular_extent = 2*np.pi/self.n_shrapnels
+        
+        base_angular_extent = np.arctan(self.base_radius/self.distance)*2
+        hit_prob = np.minimum(1.0, base_angular_extent/angular_extent)
+
+        return hit_prob
+    
+    def shot_hit_probability(self):
+        angular_radius = np.arctan(self.target_radius/self.distance)
+        kappa = 1/(self.shot_std**2)
+
+        hit_dist = vonmises(loc=self.shot_bias, kappa=kappa)
+        hit_prob = hit_dist.cdf(angular_radius) - hit_dist.cdf(-angular_radius)
+
+        return hit_prob
+
+    def collision_probability(self):
+        return self.distance < self.base_radius + self.target_radius
+
+    def expected_value(self):
+        shot_hit_p = self.shot_hit_probability()
+        shrapnel_hit_p = self.shrapnel_hit_probability()
+
+        shot_hit_p *= 1 - self.collision_probability()
+
+        win_p = shot_hit_p * (1 - shrapnel_hit_p)
+        shrapnel_p = shot_hit_p * (shrapnel_hit_p)
+        miss_p = (1 - shot_hit_p)
+        
+        expected_value = (
+            self.hit_reward*shot_hit_p
+            + self.miss_reward*miss_p
+            + self.shrapnel_reward*(shot_hit_p*shrapnel_hit_p)
+            )
+        return expected_value
+
+
 
 def study_hit_probability():
     """
@@ -61,78 +101,46 @@ def study_hit_probability():
 
     plt.show()
 
-def shot_hit_probability(distance, radius, shot_std, shot_bias=0.0):
-    angular_radius = np.arctan(radius/distance)
-    kappa = 1/(shot_std**2)
-
-    hit_dist = vonmises(loc=shot_bias, kappa=kappa)
-    hit_prob = hit_dist.cdf(angular_radius) - hit_dist.cdf(-angular_radius)
-
-    return hit_prob
-
-def shrapnel_hit_probability(distance, base_radius, n_shrapnels):
-    # TODO: Account for shrapnel size
-    # TODO: Verify by simulation! I don't fully understand this myself!
-
-    angular_extent = 2*np.pi/n_shrapnels
-    
-    base_angular_extent = np.arctan(base_radius/distance)*2
-    hit_prob = np.minimum(1.0, base_angular_extent/angular_extent)
-
-    return hit_prob
-
-
-
-def plot_shrapnel_hit_probability(base_radius=BASE_RADIUS):
+def plot_shrapnel_hit_probability():
     target_distance = np.linspace(0, 1.0, 100)[1:]
     
     n_shrapnelss = np.arange(0, 10, 1)
     for n_shrapnels in n_shrapnelss:
-        hit_prob = shrapnel_hit_probability(target_distance, base_radius, n_shrapnels=n_shrapnels)
+        trial = StaticTrial(n_shrapnels=n_shrapnels, distance=target_distance)
+        hit_prob = trial.shrapnel_hit_probability()
         plt.plot(target_distance, hit_prob, label=f"{n_shrapnels} shrapnels")
     plt.legend()
     plt.show()
 
-def plot_shot_hit_probability(target_radius=TARGET_RADIUS):
+def plot_shot_hit_probability():
     target_distance = np.linspace(0, 1.0, 100)[1:]
 
     shot_stds = np.radians(np.linspace(0.0, 30.0, 7)[1:])
 
     for shot_std in shot_stds:
-        print(shot_std)
-        plt.plot(target_distance, shot_hit_probability(target_distance, target_radius, shot_std), label=f"Shot std {np.degrees(shot_std):.1f}⁰")
+        trial = StaticTrial(distance=target_distance, shot_std=shot_std)
+        #plt.plot(target_distance, shot_hit_probability(target_distance, target_radius, shot_std), label=f"Shot std {np.degrees(shot_std):.1f}⁰")
+        plt.plot(target_distance, trial.shot_hit_probability(), label=f"Shot std {np.degrees(shot_std):.1f}⁰")
     plt.xlabel("Target distance")
     plt.ylabel("Shot hit probability")
     plt.legend()
     plt.show()
 
-def plot_outcome_probability(base_radius=BASE_RADIUS, target_radius=TARGET_RADIUS, n_shrapnels=N_SHRAPNELS):
+def plot_outcome_probability():
     target_distance = np.linspace(0, 1.0, 100)[1:]
 
     shot_stds = np.radians(np.linspace(0.0, 10.0, 4)[1:])
     
     for i, shot_std in enumerate(shot_stds):
-        print(shot_std)
-        shot_hit_p = shot_hit_probability(target_distance, target_radius, shot_std)
-        shrapnel_hit_p = shrapnel_hit_probability(target_distance, base_radius, n_shrapnels)
-
-        # Where to handle collision "probability"?
-        collision = target_distance < base_radius + target_radius
-        shot_hit_p *= 1 - collision
+        trial = StaticTrial(shot_std=shot_std, distance=target_distance)
+        shot_hit_p = trial.shot_hit_probability()
+        shrapnel_hit_p = trial.shrapnel_hit_probability()
 
         win_p = shot_hit_p * (1 - shrapnel_hit_p)
         shrapnel_p = shot_hit_p * (shrapnel_hit_p)
         miss_p = (1 - shot_hit_p)
-        
-        """
-        plt.plot(target_distance, win_p)
-        plt.plot(target_distance, shrapnel_p)
-        plt.plot(target_distance, miss_p)
-        plt.plot(target_distance, win_p + shrapnel_p + miss_p)
-        """
 
-        #expected_value = 1*win_p + (0)*shrapnel_p + (-1)*miss_p
-        expected_value = 1*shot_hit_p + (-1)*miss_p + (-1)*(shot_hit_p*shrapnel_hit_p)
+        expected_value = trial.expected_value()
         plt.figure("exp")
         plt.plot(target_distance, expected_value, color=f'C{i}', label=f"Shot std {np.degrees(shot_std):.1f}⁰")
 
