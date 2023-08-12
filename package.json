@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@parcel/resolver-default": "^2.9.3",
+    "@parcel/transformer-coffeescript": "^2.9.3",
+    "esbuild": "^0.18.10",
+    "esbuild-coffeescript": "^2.2.0",
+    "parcel": "^2.9.3"
+  },
+  "dependencies": {
+    "jquery": "^3.7.0",
+    "three": "^0.153.0"
+  }
+}
