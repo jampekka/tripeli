@@ -4,17 +4,22 @@ Mathematical models for different aspects of the Tripeli task.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 #import sympy as sp
 
 from scipy.stats import vonmises, norm
+from scipy.optimize import minimize_scalar
 
 # TODO: Verify all by simulation!
 
 @dataclass
 class StaticTrial:
-    target_radius=0.1
-    n_shrapnels: ... = 5
+    """
+    TODO: Doing this as a dataclass was as stupid idea. It's very slow
+    to make new copies out of it.
+    """
+    target_radius: ... =0.07
+    n_shrapnels: ... = 6
     shrapnel_radius=0.0
     base_radius=0.1
 
@@ -66,8 +71,15 @@ class StaticTrial:
             + self.shrapnel_reward*(shot_hit_p*shrapnel_hit_p)
             )
         return expected_value
-
-
+    
+    def optimal_distance_trial(self):
+        def loss(dist):
+            # Regretting the dataclass stuff already. Python makes
+            # this really hard
+            return -replace(self, distance=dist).expected_value()
+        minimum_dist = self.base_radius + self.target_radius
+        optimum = minimize_scalar(loss, bounds=[minimum_dist, 1e3])
+        return replace(self, distance=optimum.x)
 
 def study_hit_probability():
     """
@@ -142,7 +154,9 @@ def plot_outcome_probability():
 
         expected_value = trial.expected_value()
         plt.figure("exp")
+        opt = trial.optimal_distance_trial()
         plt.plot(target_distance, expected_value, color=f'C{i}', label=f"Shot std {np.degrees(shot_std):.1f}⁰")
+        plt.plot(opt.distance, opt.expected_value(), f'C{i}o')
 
         plt.figure("probs")
         plt.plot(target_distance, shot_hit_p, color=f'C{i}')
@@ -153,8 +167,39 @@ def plot_outcome_probability():
     plt.legend()
     plt.show()
 
+def plot_optimal_distances():
+    shot_stds = np.radians(np.linspace(0.0, 30.0, 20)[1:])
+    
+    target_radii = np.linspace(0.01, 0.2, 10)
+    
+    for target_radius in target_radii:
+        optimums = [StaticTrial(shot_std=s, target_radius=target_radius).optimal_distance_trial() for s in shot_stds]
+        distances = [t.distance for t in optimums]
+        expected_values = [t.expected_value() for t in optimums]
+        hit_ps = [t.shot_hit_probability() for t in optimums]
+
+        # = [t.distance for t in optimums]
+        plt.figure("distances")
+        plt.plot(np.degrees(shot_stds), distances, label=f"Target radius {target_radius:.2f}")
+        plt.xlabel("Shot std (degrees)")
+        plt.ylabel("Optimal distance")
+        plt.figure("hit_ps")
+        #plt.plot(np.degrees(shot_stds), expected_values)
+        plt.plot(np.degrees(shot_stds), hit_ps)
+        plt.xlabel("Shot std (degrees)")
+        plt.ylabel("Hit probability at optimal distance")
+    
+    plt.figure("distances")
+    plt.ylim(0, 1)
+    plt.axhline(0.9)
+    plt.legend()
+    plt.show()
+        #for i, shot_std in enumerate(shot_stds):
+        #    optimal = Static
+
 if __name__ == '__main__':
     #study_hit_probability()
     #plot_shot_hit_probability()
     #plot_shrapnel_hit_probability()
     plot_outcome_probability()
+    #plot_optimal_distances()

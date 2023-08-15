@@ -113,20 +113,64 @@ do ->
 	base = new Game.Base BASE_RADIUS
 	scene.add base.object
 
-	new_trial = ->
-		new Game.StaticTargetTrial
+	tickers = []
+	
+	add_ticker = (ticker) ->
+		tickers.push ticker
+
+	tick_tickers = (...args) ->
+		current_tickers = tickers
+		tickers = []
+		old_tickers = current_tickers.filter (ticker) ->
+			result = ticker dt, events
+			if result == Game.TICKER_DONE
+				return false
+			return true
+		tickers = old_tickers.concat tickers
+
+
+	after = (dur, callback) ->
+		time_left = dur
+		add_ticker (dt) ->
+			time_left -= dt
+			return if time_left > 0
+			
+			callback()
+			return Game.TICKER_DONE
+	
+
+	single_oncoming = ->
+		new Game.SingleTargetTrial
 			runner: runner
 			scene: scene
 			base: base
-	trial = new_trial()
+			distance: 0.9
+			speed: 0.3
+	
+	two_target_static = ->
+		new Game.TwoTargetTrial
+			runner: runner
+			scene: scene
+			base: base
+
+	new_trial = ->
+		trial = two_target_static()
+		#trial = single_oncoming()
+		add_ticker trial.tick
+		return trial
+
+
+	active_trial = null
+	active_trial = new_trial()
 	for await dt from frames()
 		events = runner.pop_events()
+		
+		tick_tickers(dt, events)
 
-		result = trial.tick dt, events
-		runner.render trial.scene
-
-		if result == Game.TICKER_DONE
-			trial.dispose()
-			trial = new_trial()
+		runner.render scene
+		if active_trial? and active_trial.trial_done()
+			active_trial = null
+			after 1.0, ->
+				active_trial = new_trial()
 
 	#game = new Game($ "#gamearea")
