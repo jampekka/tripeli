@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import {TextGeometry} from 'three/addons/geometries/TextGeometry.js'
-import {FontLoader} from 'three/addons/loaders/FontLoader.js'
 
 export TICKER_DONE = Symbol("TICKER_DONE")
 
@@ -15,7 +14,7 @@ export class Base
 	
 	hit: =>
 		@base_health = 0.0
-		text = new Text ("-1")
+		text = new Text @env, "-1", color: 0xff0000
 		@object.add text.object
 
 	tick: (dt) =>
@@ -30,25 +29,27 @@ export class Base
 			@base_health**2
 		)
 
-# THIS IS BAD!
-hack_font = null
-(new FontLoader()).load "node_modules/three/examples/fonts/droid/droid_sans_bold.typeface.json", (font) ->
-	hack_font = font
 
-class Text
-	constructor: (text) ->
-		console.log hack_font
+
+export class Text
+	constructor: (@env, text, opts) ->
 		geometry = new TextGeometry text,
-			#size: 0.1
-			#height: 0.1
-			font: hack_font
+			size: 0.1
+			height: 0.1
+			font: @env.font
 		material = new THREE.MeshBasicMaterial
-			color: 0xffffff
+			color: opts.color ? 0xffffff
+		
+		geometry.computeBoundingBox()
+		x = geometry.boundingBox.max.x/2
+		y = geometry.boundingBox.max.y/2
+		
+		geometry.translate(-x, -y, 0)
 		@object = new THREE.Mesh geometry, material
 		#@object.scale.set 0.1, 0.1, 0.1
 
 class Target
-	constructor: (opts={}) ->
+	constructor: (@env, opts={}) ->
 		{
 		@distance=1.0
 		@angle=(Math.random() - 0.5)/2*Math.PI
@@ -138,6 +139,7 @@ class Target
 		@rush_at = @t + 0.1
 	
 	hit: =>
+
 		@dead = true
 		#@set_speed 0.0
 		@death_t = @t + 0.1
@@ -205,7 +207,7 @@ class TrialBase
 		return object
 	
 	add_target: (opts) ->
-		target = new Target opts
+		target = new Target @env, opts
 		@add_object target
 		@targets.add target
 		return target
@@ -289,6 +291,9 @@ class TrialBase
 		return if target.dead
 		
 		target.hit()
+		text = new Text @env, "+1", color: 0x00ff00
+		text.object.position.copy(target.object.position)
+		@scene.add text.object
 
 		@target_hits.push target
 		@launch_shrapnels target

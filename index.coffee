@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import $ from 'jquery'
-
+import {FontLoader} from 'three/addons/loaders/FontLoader.js'
 
 class Events
 	constructor: () ->
@@ -120,7 +120,15 @@ do ->
 	
 	env.base = base
 	
-
+	# TODO: Better path!
+	env.font = await new Promise (resolve, reject) ->
+		loader = new FontLoader()
+		path = "node_modules/three/examples/fonts/droid/droid_sans_bold.typeface.json"
+		loader.load path,
+			(font) -> resolve(font)
+			null,
+			(error) -> reject(error)
+	
 	tickers = []
 	
 	add_ticker = (ticker) ->
@@ -156,8 +164,8 @@ do ->
 		new Game.TwoTargetTrial env
 
 	new_trial = ->
-		#trial = two_target_static()
-		trial = single_oncoming()
+		trial = two_target_static()
+		#trial = single_oncoming()
 		add_ticker trial.tick
 		return trial
 
