@@ -110,8 +110,16 @@ do ->
 	runner = new GameRunner($ "#gamearea")
 	
 	scene = new THREE.Scene
-	base = new Game.Base BASE_RADIUS
+	
+	env =
+		runner: runner
+		scene: scene
+	
+	base = new Game.Base env, BASE_RADIUS
 	scene.add base.object
+	
+	env.base = base
+	
 
 	tickers = []
 	
@@ -140,22 +148,16 @@ do ->
 	
 
 	single_oncoming = ->
-		new Game.SingleTargetTrial
-			runner: runner
-			scene: scene
-			base: base
+		new Game.SingleTargetTrial env,
 			distance: 0.9
 			speed: 0.3
 	
 	two_target_static = ->
-		new Game.TwoTargetTrial
-			runner: runner
-			scene: scene
-			base: base
+		new Game.TwoTargetTrial env
 
 	new_trial = ->
-		trial = two_target_static()
-		#trial = single_oncoming()
+		#trial = two_target_static()
+		trial = single_oncoming()
 		add_ticker trial.tick
 		return trial
 

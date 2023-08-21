@@ -5,7 +5,7 @@ import {FontLoader} from 'three/addons/loaders/FontLoader.js'
 export TICKER_DONE = Symbol("TICKER_DONE")
 
 export class Base
-	constructor: (@radius) ->
+	constructor: (@env, @radius) ->
 		@geometry = new THREE.SphereGeometry @radius, 30, 30
 		@material = new THREE.MeshBasicMaterial color: 0xaaaaaa
 		
@@ -179,12 +179,12 @@ class RayObject
 		@object.material.opacity = 1 - @t/@duration
 
 class TrialBase
-	constructor: (opts) ->
+	constructor: (@env) ->
 		{
 		@runner
 		@scene
 		@base
-		}=opts
+		}=@env
 		
 
 		@objects = new Set()
@@ -343,8 +343,8 @@ uniform = (low, high) ->
 default_distance_range = [0.3, 0.8]
 
 export class SingleTargetTrial extends TrialBase
-	constructor: (opts) ->
-		super opts
+	constructor: (env, opts) ->
+		super env
 		@target = @add_target
 			distance: opts.distance ? uniform ...default_distance_range
 			speed: opts.speed ? 0.0
@@ -370,8 +370,8 @@ export class SingleTargetTrial extends TrialBase
 
 
 export class TwoTargetTrial extends TrialBase
-	constructor: (opts) ->
-		super opts
+	constructor: (env, @opts) ->
+		super env
 		
 		@target_left = @add_target
 			distance: uniform ...default_distance_range
