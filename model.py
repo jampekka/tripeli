@@ -19,8 +19,8 @@ class StaticTrial:
     to make new copies out of it.
     """
     target_radius: ... =0.07
-    n_shrapnels: ... = 6
-    shrapnel_radius=0.0
+    n_shrapnels: ... = 5
+    shrapnel_radius=0.01
     base_radius=0.1
 
     distance: ... =0.5
@@ -38,13 +38,13 @@ class StaticTrial:
 
         angular_extent = 2*np.pi/self.n_shrapnels
         
-        base_angular_extent = np.arctan(self.base_radius/self.distance)*2
+        base_angular_extent = np.arcsin((self.base_radius + self.shrapnel_radius)/self.distance)*2
         hit_prob = np.minimum(1.0, base_angular_extent/angular_extent)
 
         return hit_prob
     
     def shot_hit_probability(self):
-        angular_radius = np.arctan(self.target_radius/self.distance)
+        angular_radius = np.arcsin(self.target_radius/self.distance)
         kappa = 1/(self.shot_std**2)
 
         hit_dist = vonmises(loc=self.shot_bias, kappa=kappa)
